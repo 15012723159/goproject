@@ -3,14 +3,36 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/consul/api"
 	"google.golang.org/grpc"
 	"grpc/day01/pb"
+	"strconv"
 )
 
 // 客户端调用grpc服务
 func main() {
-	//
-	grpcconn, _ := grpc.Dial(":8800", grpc.WithInsecure())
+
+	// 1.初始化consul配置
+	consulConfig := api.DefaultConfig()
+
+	//2.创建consul对象
+	consulClient, error := api.NewClient(consulConfig)
+
+	// 3. 从consul上获取健康的服务
+
+	ServiceEntry, _, error := consulClient.Health().Service("HelloService", "testhello", true, nil)
+
+	if error != nil {
+
+		fmt.Println(error.Error())
+		fmt.Println("获取服务失败")
+		return
+
+	}
+
+	address := ServiceEntry[0].Service.Address + ":" + strconv.Itoa(ServiceEntry[0].Service.Port)
+	//grpcconn, _ := grpc.Dial("127.0.0.1:8800", grpc.WithInsecure())
+	grpcconn, _ := grpc.Dial(address, grpc.WithInsecure())
 
 	//初始化grpc客户端
 
